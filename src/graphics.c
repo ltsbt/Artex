@@ -18,22 +18,70 @@ void renderBackground();
 SDL_Texture *getImageTexture(const char *path, SDL_Renderer *renderer);
 void showFileNamePreview(const char *current_file, bool did_file_change);
 
-static const char *BACKGROUND_PATH = "../assets/textures/background.png";
-static const char *FONT_PATH = "../assets/fonts/Perfect DOS VGA 437.ttf";
-static const int FONT_SIZE = 64;
-static const int OUTLINE_SIZE = 1;
-
 static SDL_Window *window;
 static SDL_Renderer *renderer;
+static int w_width, w_height;
+
+// =================== Fonts ===================
+static const int FONT_SIZE = 64;
+static const int OUTLINE_SIZE = 1;
+static const char *FONT_PATH = "../assets/fonts/Perfect DOS VGA 437.ttf";
+
 static TTF_Font *font;
 static TTF_Font *font_outline;
 static SDL_Texture *text_texture;
 static SDL_Texture *text_outline_texture;
-static SDL_Texture *background_texture;
 
 static const SDL_Color TEXT_COLOR = {255, 255, 255, 255};
 static const SDL_Color TEXT_OUTLINE_COLOR = {0, 0, 0, 255};
 
+void initFonts() {
+  if (TTF_Init() != 0) {
+    fprintf(stderr, "TTF_Init failed: %s\n", TTF_GetError());
+    exit(1);
+  }
+
+  font = TTF_OpenFont(FONT_PATH, FONT_SIZE);
+  font_outline = TTF_OpenFont(FONT_PATH, FONT_SIZE);
+
+  if (font == NULL) {
+    fprintf(stderr, "TTF_OpenFont failed: %s\n", TTF_GetError());
+    exit(1);
+  }
+
+  TTF_SetFontOutline(font_outline, OUTLINE_SIZE);
+}
+
+void cleanupFonts() {
+  TTF_CloseFont(font);
+  TTF_CloseFont(font_outline);
+
+  SDL_DestroyTexture(text_texture);
+  SDL_DestroyTexture(text_outline_texture);
+}
+
+// =================== Textures ===================
+static const char *BACKGROUND_PATH = "../assets/textures/background.png";
+static const char *BOOK_PATH = "../assets/textures/book.png";
+
+static SDL_Texture *background_texture;
+static SDL_Texture *book_texture;
+
+void initTextures() {
+  background_texture = getImageTexture(BACKGROUND_PATH, renderer);
+  book_texture = getImageTexture(BOOK_PATH, renderer);
+}
+
+void cleanupTextures() {
+  SDL_DestroyTexture(background_texture);
+  SDL_DestroyTexture(book_texture);
+}
+
+// =================== Animation ===================
+const int FPS = 60;
+const int FRAME_DELAY = 1000 / FPS;
+
+// =================== Graphics ===================
 void initGraphics(const char *window_title, int window_options) {
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
     fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
@@ -57,27 +105,6 @@ void initGraphics(const char *window_title, int window_options) {
   initTextures();
 }
 
-void initFonts() {
-  if (TTF_Init() != 0) {
-    fprintf(stderr, "TTF_Init failed: %s\n", TTF_GetError());
-    exit(1);
-  }
-
-  font = TTF_OpenFont(FONT_PATH, FONT_SIZE);
-  font_outline = TTF_OpenFont(FONT_PATH, FONT_SIZE);
-
-  if (font == NULL) {
-    fprintf(stderr, "TTF_OpenFont failed: %s\n", TTF_GetError());
-    exit(1);
-  }
-
-  TTF_SetFontOutline(font_outline, OUTLINE_SIZE);
-}
-
-void initTextures() {
-  background_texture = getImageTexture(BACKGROUND_PATH, renderer);
-}
-
 void cleanupGraphics() {
   cleanupFonts();
   cleanupTextures();
@@ -89,22 +116,14 @@ void cleanupGraphics() {
   SDL_Quit();
 }
 
-void cleanupFonts() {
-  TTF_CloseFont(font);
-  TTF_CloseFont(font_outline);
-
-  SDL_DestroyTexture(text_texture);
-  SDL_DestroyTexture(text_outline_texture);
-}
-
-void cleanupTextures() { SDL_DestroyTexture(background_texture); }
-
 void renderClear() {
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
   SDL_RenderClear(renderer);
 }
 
 void renderPresent() { SDL_RenderPresent(renderer); }
+
+void delay() { SDL_Delay(FRAME_DELAY); }
 
 void renderBackground() {
   SDL_RenderCopy(renderer, background_texture, NULL, NULL);
@@ -147,12 +166,30 @@ void showFileNamePreview(const char *current_file, bool did_file_change) {
     SDL_FreeSurface(text_outline_surface);
   }
 
-  // center text on the screen
-  int window_width, window_height;
-  SDL_GetWindowSize(window, &window_width, &window_height);
-  SDL_QueryTexture(text_texture, NULL, NULL, &text_rect.w, &text_rect.h);
-  text_rect.x = (window_width - text_rect.w) / 2;
-  text_rect.y = (window_height - text_rect.h) / 2;
+  // draw the book texture 80% of the screen height and centered horizontally
+  SDL_GetWindowSize(window, &w_width, &w_height);
+  int book_width, book_height;
+  SDL_QueryTexture(book_texture, NULL, NULL, &book_width, &book_height);
+  int book_rect_height = w_height * 0.8;
+  int book_rect_width =
+      (int)(book_width * (float)book_rect_height / book_height);
+
+  SDL_Rect book_rect = {(w_width - book_rect_width) / 2,
+                        (w_height - book_rect_height) / 2, book_rect_width,
+                        book_rect_height};
+
+  SDL_RenderCopy(renderer, book_texture, NULL, &book_rect);
+
+  int text_width, text_height;
+  TTF_SizeText(font, current_file, &text_width, &text_height);
+  int start_x = book_rect.x + book_rect_width * 0.2;   // 20% from the left
+  int center_y = book_rect.y + book_rect_height * 0.2; // 20% from the top
+  int text_ratio = text_width / text_height;           // keep text proportional
+  int end_x = book_rect.x + book_rect_width * 0.9;
+  int start_y = center_y - (end_x - start_x) / text_ratio / 2;
+  int end_y = center_y + (end_x - start_x) / text_ratio / 2;
+
+  text_rect = (SDL_Rect){start_x, start_y, end_x - start_x, end_y - start_y};
 
   // write text to the screen
   SDL_RenderCopy(renderer, text_texture, NULL, &text_rect);

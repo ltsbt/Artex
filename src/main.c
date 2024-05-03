@@ -8,8 +8,6 @@
 #include <stdio.h>
 
 const char *WINDOW_TITLE = "Artex";
-const int FPS = 60;
-const int FRAME_DELAY = 1000 / FPS;
 
 int main(int argc, char *argv[]) {
   // ========================================================
@@ -79,7 +77,7 @@ int main(int argc, char *argv[]) {
 
     // ================ Update screen =======================
     renderPresent();
-    SDL_Delay(FRAME_DELAY);
+    delay();
   }
 
   // ========================================================

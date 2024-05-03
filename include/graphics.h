@@ -24,6 +24,7 @@ void initGraphics(const char *window_title, int window_options);
 void cleanupGraphics();
 void renderClear();
 void renderPresent();
+void delay();
 void renderBackground();
 void showFileNamePreview(const char *current_file, bool did_file_change);
 
