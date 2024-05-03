@@ -12,11 +12,11 @@ const int FPS = 60;
 const int FRAME_DELAY = 1000 / FPS;
 
 int main(int argc, char *argv[]) {
-  SDL_Event event;
-
+  // ========================================================
+  // ================== File list ===========================
+  // ========================================================
   const char *dir_path = argc > 1 ? argv[1] : ".";
   const FileList file_list = list_files(dir_path);
-
   if (file_list.count == 0) {
     fprintf(stderr, "No files found in %s\n", dir_path);
     return 1;
@@ -25,9 +25,6 @@ int main(int argc, char *argv[]) {
   int current_index = 0;
   char current_file[32] = "";
   strncpy(current_file, file_list.file_names[0], sizeof(current_file));
-
-  bool should_quit = false;
-  bool did_file_change = true;
 
   // ========================================================
   // ================== SDL initialization ==================
@@ -42,8 +39,11 @@ int main(int argc, char *argv[]) {
   // ========================================================
   // ================== Main loop ===========================
   // ========================================================
-  while (!should_quit) {
+  SDL_Event event;
+  bool should_quit = false;
+  bool did_file_change = true;
 
+  while (!should_quit) {
     // ================ Event handling ======================
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) {
