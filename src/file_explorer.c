@@ -2,6 +2,12 @@
 #include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+// compare file names ignoring case
+int compare_file_names(const void *a, const void *b) {
+  return strcasecmp((const char *)a, (const char *)b);
+}
 
 FileList list_files(const char *dir_path) {
 
@@ -9,9 +15,8 @@ FileList list_files(const char *dir_path) {
   struct dirent *entry;
 
   FileList list;
-  list.file_names = malloc(10 * sizeof(char *));
+  memset(list.file_names, 0, sizeof(list.file_names));
   list.count = 0;
-  int capacity = 10;
 
   dir = opendir(dir_path);
 
@@ -26,15 +31,14 @@ FileList list_files(const char *dir_path) {
       continue;
     }
 
-    if (list.count == capacity) {
-      capacity *= 2;
-      list.file_names = realloc(list.file_names, capacity * sizeof(char *));
-    }
-    list.file_names[list.count] = entry->d_name;
+    strncpy(list.file_names[list.count], entry->d_name, MAX_FILE_NAME_LENGTH);
     list.count++;
   }
 
   (void)closedir(dir);
+
+  // sort the file names
+  qsort(list.file_names, list.count, MAX_FILE_NAME_LENGTH, compare_file_names);
 
   return list;
 }

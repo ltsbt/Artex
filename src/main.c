@@ -31,7 +31,11 @@ int main(int argc, char *argv[]) {
   SDL_Event event;
 
   const char *dir_path = argc > 1 ? argv[1] : ".";
-  FileList file_list = list_files(dir_path);
+  const FileList file_list = list_files(dir_path);
+
+  for (int i = 0; i < file_list.count; i++) {
+    printf("%s\n", file_list.file_names[i]);
+  }
 
   if (file_list.count == 0) {
     fprintf(stderr, "No files found in %s\n", dir_path);
@@ -39,7 +43,9 @@ int main(int argc, char *argv[]) {
   }
 
   int current_index = 0;
-  char *current_file = "test";
+  char current_file[256] = "";
+  strncpy(current_file, file_list.file_names[0], sizeof(current_file));
+
   bool should_quit = false;
   bool did_file_change = false;
 
@@ -127,12 +133,16 @@ int main(int argc, char *argv[]) {
         case SDLK_LEFT:
           current_index =
               current_index == 0 ? file_list.count - 1 : current_index - 1;
-          // TODO: update current file
+          strncpy(current_file, file_list.file_names[current_index],
+                  sizeof(current_file));
+          did_file_change = true;
           break;
         case SDLK_RIGHT:
           current_index =
               current_index == file_list.count - 1 ? 0 : current_index + 1;
-          // TODO: update current file
+          strncpy(current_file, file_list.file_names[current_index],
+                  sizeof(current_file));
+          did_file_change = true;
           break;
         }
       }
