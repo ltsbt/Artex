@@ -26,6 +26,7 @@ void renderClear();
 void renderPresent();
 void delay();
 void renderBackground();
-void showFileNamePreview(const char *current_file, bool did_file_change);
+void showFileNamePreview(const char *current_file, bool did_file_change,
+                         int direction);
 
 #endif

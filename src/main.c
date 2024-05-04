@@ -39,7 +39,10 @@ int main(int argc, char *argv[]) {
   // ========================================================
   SDL_Event event;
   bool should_quit = false;
-  bool did_file_change = true;
+
+  bool show_file_preview = false;
+  bool did_file_change = false;
+  int file_change_direction = -1; // -1 for left, 1 for right
 
   while (!should_quit) {
     // ================ Event handling ======================
@@ -58,6 +61,7 @@ int main(int argc, char *argv[]) {
           strncpy(current_file, file_list.file_names[current_index],
                   sizeof(current_file));
           did_file_change = true;
+          file_change_direction = -1;
           break;
         case SDLK_RIGHT:
           current_index =
@@ -65,6 +69,10 @@ int main(int argc, char *argv[]) {
           strncpy(current_file, file_list.file_names[current_index],
                   sizeof(current_file));
           did_file_change = true;
+          file_change_direction = 1;
+          break;
+        case SDLK_RETURN:
+          show_file_preview = !show_file_preview;
           break;
         }
       }
@@ -73,7 +81,10 @@ int main(int argc, char *argv[]) {
     // ================ Rendering ===========================
     renderClear();
     renderBackground();
-    showFileNamePreview(current_file, did_file_change);
+    if (show_file_preview) {
+      showFileNamePreview(current_file, did_file_change, file_change_direction);
+      did_file_change = false;
+    }
 
     // ================ Update screen =======================
     renderPresent();
